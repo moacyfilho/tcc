@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@layer base {
+  html {
+    font-family: 'Inter', 'system-ui', sans-serif;
+  }
+
+  body {
+    @apply antialiased;
+  }
+
+  .prose p { margin-bottom: 0.85rem; line-height: 1.85; }
+  .prose h1, .prose h2, .prose h3 { font-family: 'Inter', sans-serif; font-weight: 900; }
+  .prose blockquote { border-left-width: 4px; border-color: #6366f1; padding-left: 1rem; color: #64748b; font-style: italic; }
+  .prose ul, .prose ol { margin-left: 1rem; padding-left: 1rem; margin-bottom: 0.75rem; }
+  .prose li { margin-bottom: 0.25rem; }
+
+  .font-serif { font-family: 'Merriweather', 'Georgia', serif; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 99px; }
+  .dark ::-webkit-scrollbar-thumb { background: #1e293b; }
+}
