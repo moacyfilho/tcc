@@ -1,11 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   Sparkles, BookOpen, Layout, PenTool, Quote, Loader2,
-  Copy, Check, Home, FileText, History, Trash2, Download,
+  Copy, Check, Home, FileText, History, Trash2,
   Compass, CheckCircle2, Circle, ListTodo, GraduationCap,
   Moon, Sun, Plus, Target, BarChart3, Timer, BookMarked,
   MessageCircleWarning, ArrowUpRight, FileJson, Pause, Play,
-  StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save, Cloud
+  StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save,
+  Send, RotateCcw, Sliders, Languages, Calendar, HelpCircle, Scissors,
+  FlaskConical, ClipboardList, MessageSquare, ChevronRight
 } from 'lucide-react';
 import { db } from './firebase';
 import {
@@ -16,7 +18,7 @@ import {
 // --- CONFIG ---
 const API_KEY = "AIzaSyDL4KUxvFd8eueVQG2N-qpXoaTLjxSItqs";
 const MODEL = "gemini-2.5-flash";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
+const STREAM_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?key=${API_KEY}&alt=sse`;
 
 // LocalStorage apenas para preferências de UI
 const loadPref = (key, def) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } };
@@ -25,18 +27,36 @@ const savePref = (key, val) => { try { localStorage.setItem(key, JSON.stringify(
 // ID do utilizador fixo (app pessoal do Marcio)
 const USER_ID = 'marcio-souza';
 
-// --- FERRAMENTAS ---
+// --- FERRAMENTAS (16 no total) ---
 const TOOLS = [
-  { id: 'brainstorm', name: 'Ideias de Temas', icon: <Compass className="w-5 h-5"/>, color: 'text-violet-500', bg: 'bg-violet-500/10', prompt: 'És orientador académico rigoroso. Sugere 5 temas de TCC inovadores e bem delimitados para a área de interesse. Para cada tema: **Título**, **Problema de Pesquisa**, **Objetivo Geral** e **Justificativa**. Use Markdown. Interesse do aluno: ' },
-  { id: 'outline', name: 'Estrutura ABNT', icon: <Layout className="w-5 h-5"/>, color: 'text-blue-500', bg: 'bg-blue-500/10', prompt: 'Cria um sumário detalhado seguindo ABNT NBR 14724. Inclui numeração, Introdução, Referencial Teórico, Metodologia, Resultados Esperados, Conclusão e Referências. Estima páginas para cada seção. Tema: ' },
-  { id: 'writer', name: 'Redação Científica', icon: <PenTool className="w-5 h-5"/>, color: 'text-orange-500', bg: 'bg-orange-500/10', prompt: 'Escreve um texto acadêmico formal e rigoroso em Português do Brasil. Use voz passiva, citações indiretas e conectivos científicos. Evita plágio. Produz pelo menos 400 palavras. Use Markdown com títulos e subtítulos. Tópico: ' },
-  { id: 'intro', name: 'Introdução', icon: <BookOpen className="w-5 h-5"/>, color: 'text-cyan-500', bg: 'bg-cyan-500/10', prompt: 'Escreve uma INTRODUÇÃO completa para TCC seguindo ABNT. Deve conter: contextualização do problema, justificativa, objetivos (geral e específicos), delimitação do estudo e estrutura do trabalho. Mínimo 500 palavras. Tema: ' },
-  { id: 'methodology', name: 'Metodologia', icon: <AlignLeft className="w-5 h-5"/>, color: 'text-teal-500', bg: 'bg-teal-500/10', prompt: 'Escreve um capítulo de METODOLOGIA completo para TCC. Inclui: tipo de pesquisa, abordagem (qualitativa/quantitativa), universo e amostra, instrumentos de coleta, procedimentos de análise. Justifica cada escolha metodológica. Tema do TCC: ' },
-  { id: 'reviewer', name: 'Revisor Crítico', icon: <MessageCircleWarning className="w-5 h-5"/>, color: 'text-red-500', bg: 'bg-red-500/10', prompt: 'Atua como avaliador de banca examinadora. Analisa o texto abaixo em 4 dimensões: **Clareza e Coesão**, **Rigor Científico**, **Conformidade ABNT** e **Qualidade do Argumento**. Aponta problemas específicos com sugestões de correção. Texto: ' },
-  { id: 'bibliography', name: 'Fontes e Citações', icon: <BookMarked className="w-5 h-5"/>, color: 'text-emerald-500', bg: 'bg-emerald-500/10', prompt: 'Sugere 8 referências bibliográficas REAIS e relevantes (livros, artigos e dissertações). Para cada uma: autor, ano, título, e explica a relevância para o tema. Formata em ABNT NBR 6023. Assunto: ' },
-  { id: 'abstract', name: 'Resumo e Abstract', icon: <FileText className="w-5 h-5"/>, color: 'text-pink-500', bg: 'bg-pink-500/10', prompt: 'Gera RESUMO em Português (250 palavras) e ABSTRACT em Inglês (250 words) conforme ABNT NBR 6028. Inclui: objetivos, metodologia, resultados esperados e conclusão. Adiciona 5 palavras-chave/keywords. Texto base: ' },
-  { id: 'references', name: 'Referências ABNT', icon: <Quote className="w-5 h-5"/>, color: 'text-amber-500', bg: 'bg-amber-500/10', prompt: 'Formata corretamente nas normas ABNT NBR 6023 (2018). Ordena alfabeticamente. Aplica todos os padrões (negrito, itálico, pontuação). Dados fornecidos: ' },
+  { id: 'brainstorm',   name: 'Ideias de Temas',          icon: <Compass className="w-5 h-5"/>,           color: 'text-violet-500',  bg: 'bg-violet-500/10',  prompt: 'És orientador académico rigoroso. Sugere 5 temas de TCC inovadores e bem delimitados. Para cada: **Título**, **Problema de Pesquisa**, **Objetivo Geral** e **Justificativa**. Interesse: ' },
+  { id: 'problem',      name: 'Problema de Pesquisa',     icon: <HelpCircle className="w-5 h-5"/>,         color: 'text-rose-500',    bg: 'bg-rose-500/10',    prompt: 'Formula um PROBLEMA DE PESQUISA científico e bem delimitado. Apresenta: pergunta central, sub-perguntas, e justificativa da relevância académica. Tema: ' },
+  { id: 'hypothesis',   name: 'Hipóteses',                icon: <FlaskConical className="w-5 h-5"/>,        color: 'text-purple-500',  bg: 'bg-purple-500/10',  prompt: 'Gera hipóteses de pesquisa plausíveis e testáveis. Apresenta hipótese principal (H1) e nula (H0) e hipóteses secundárias. Justifica cada uma com base teórica. Tema/Problema: ' },
+  { id: 'outline',      name: 'Estrutura ABNT',           icon: <Layout className="w-5 h-5"/>,             color: 'text-blue-500',    bg: 'bg-blue-500/10',    prompt: 'Cria um sumário detalhado ABNT NBR 14724. Inclui numeração, todos os capítulos obrigatórios, estimativa de páginas. Tema: ' },
+  { id: 'intro',        name: 'Introdução',               icon: <BookOpen className="w-5 h-5"/>,           color: 'text-cyan-500',    bg: 'bg-cyan-500/10',    prompt: 'Escreve INTRODUÇÃO completa para TCC (ABNT): contextualização, justificativa, objetivos geral e específicos, delimitação, estrutura do trabalho. Mínimo 500 palavras. Tema: ' },
+  { id: 'writer',       name: 'Redação Científica',       icon: <PenTool className="w-5 h-5"/>,            color: 'text-orange-500',  bg: 'bg-orange-500/10',  prompt: 'Escreve texto académico formal em Português do Brasil. Voz passiva, citações indiretas, conectivos científicos. Mínimo 400 palavras com títulos e subtítulos. Tópico: ' },
+  { id: 'chapter',      name: 'Desenvolvimento',          icon: <FileText className="w-5 h-5"/>,           color: 'text-indigo-500',  bg: 'bg-indigo-500/10',  prompt: 'Escreve um capítulo de DESENVOLVIMENTO completo para TCC. Inclui subtítulos, argumentação sólida, citações indiretas e conexão com o problema de pesquisa. Mínimo 600 palavras. Capítulo/Tema: ' },
+  { id: 'methodology',  name: 'Metodologia',              icon: <AlignLeft className="w-5 h-5"/>,          color: 'text-teal-500',    bg: 'bg-teal-500/10',    prompt: 'Escreve capítulo de METODOLOGIA (ABNT): tipo de pesquisa, abordagem, universo/amostra, instrumentos de coleta, análise. Justifica cada escolha. Tema: ' },
+  { id: 'conclusion',   name: 'Conclusão',                icon: <CheckCircle2 className="w-5 h-5"/>,       color: 'text-green-500',   bg: 'bg-green-500/10',   prompt: 'Escreve uma CONCLUSÃO académica completa para TCC. Retoma os objetivos, responde ao problema de pesquisa, sintetiza resultados, aponta limitações e sugere pesquisas futuras. Mínimo 400 palavras. Tema/Objetivos: ' },
+  { id: 'paraphrase',   name: 'Paráfrase Inteligente',   icon: <Scissors className="w-5 h-5"/>,           color: 'text-yellow-500',  bg: 'bg-yellow-500/10',  prompt: 'Reescreve o texto abaixo de forma original, mantendo o significado mas alterando a estrutura e vocabulário para eliminar plágio. Mantém o tom académico formal. Texto: ' },
+  { id: 'analyze',      name: 'Análise de Artigo',        icon: <Search className="w-5 h-5"/>,             color: 'text-sky-500',     bg: 'bg-sky-500/10',     prompt: 'Analisa o artigo/texto científico abaixo. Apresenta: tema central, metodologia usada, principais argumentos, limitações do estudo, e como pode ser citado num TCC. Artigo: ' },
+  { id: 'questionnaire',name: 'Questionário de Pesquisa', icon: <ClipboardList className="w-5 h-5"/>,      color: 'text-lime-500',    bg: 'bg-lime-500/10',    prompt: 'Cria um questionário científico estruturado para coleta de dados primários. Inclui: objetivo, perguntas abertas e fechadas (escala Likert), e orientações para o respondente. Tema/objetivo da pesquisa: ' },
+  { id: 'schedule',     name: 'Cronograma ABNT',          icon: <Calendar className="w-5 h-5"/>,           color: 'text-orange-400',  bg: 'bg-orange-400/10',  prompt: 'Cria um cronograma detalhado para elaboração de TCC formatado em tabela Markdown. Distribui as etapas ao longo de meses. Número de meses disponíveis e tema: ' },
+  { id: 'reviewer',     name: 'Revisor Crítico',          icon: <MessageCircleWarning className="w-5 h-5"/>,color: 'text-red-500',     bg: 'bg-red-500/10',     prompt: 'Avalia como banca examinadora: **Clareza**, **Rigor Científico**, **Conformidade ABNT**, **Qualidade do Argumento**. Aponta problemas e sugere correções. Texto: ' },
+  { id: 'abstract',     name: 'Resumo e Abstract',        icon: <Languages className="w-5 h-5"/>,          color: 'text-pink-500',    bg: 'bg-pink-500/10',    prompt: 'Gera RESUMO em Português (250 palavras) e ABSTRACT em Inglês conforme ABNT NBR 6028. Objetivos, metodologia, resultados, conclusão, 5 palavras-chave. Texto base: ' },
+  { id: 'bibliography', name: 'Fontes e Citações',        icon: <BookMarked className="w-5 h-5"/>,         color: 'text-emerald-500', bg: 'bg-emerald-500/10', prompt: 'Sugere 8 referências bibliográficas REAIS (livros, artigos, dissertações) em ABNT NBR 6023. Para cada: autor, ano, título, relevância. Assunto: ' },
+  { id: 'references',   name: 'Referências ABNT',         icon: <Quote className="w-5 h-5"/>,             color: 'text-amber-500',   bg: 'bg-amber-500/10',   prompt: 'Formata em ABNT NBR 6023 (2018). Ordena alfabeticamente com todos os padrões de formatação. Dados: ' },
 ];
+
+const TONES = [
+  { id: 'formal',   label: 'Formal',    desc: 'Académico clássico' },
+  { id: 'technical',label: 'Técnico',   desc: 'Preciso e direto' },
+  { id: 'detailed', label: 'Detalhado', desc: 'Extenso e completo' },
+  { id: 'concise',  label: 'Conciso',   desc: 'Objetivo e breve' },
+];
+
+const WORD_TARGETS = [200, 400, 600, 800, 1200];
+
 
 const CHAPTERS = ['Introdução', 'Referencial Teórico', 'Metodologia', 'Resultados', 'Discussão', 'Conclusão', 'Referências'];
 
@@ -71,6 +91,14 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [notes, setNotes] = useState({});
   const [chapterStatus, setChapterStatus] = useState({});
+
+  // New feature states
+  const [tone, setTone] = useState('formal');
+  const [wordTarget, setWordTarget] = useState(400);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [followUpInput, setFollowUpInput] = useState('');
+  const [followUpLoading, setFollowUpLoading] = useState(false);
+  const resultRef = useRef(null);
 
   const [timer, setTimer] = useState(25 * 60);
   const [timerActive, setTimerActive] = useState(false);
@@ -205,41 +233,97 @@ export default function App() {
     exportPDF(html, `TCC Completo - ${project?.title || 'Projeto'}`);
   };
 
+  // --- STREAMING AI CALL ---
+  const streamAI = async (messages, onChunk) => {
+    const res = await fetch(STREAM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: messages,
+        generationConfig: { temperature: tone === 'concise' ? 0.4 : tone === 'detailed' ? 0.9 : 0.7, maxOutputTokens: 8192 }
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value).split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const json = JSON.parse(line.slice(6));
+          const chunk = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (chunk) { full += chunk; onChunk(full); }
+        } catch {}
+      }
+    }
+    return full;
+  };
+
+  const buildSys = () => {
+    const toneMap = { formal: 'tom formal e académico', technical: 'tom técnico e preciso', detailed: 'tom detalhado e extenso', concise: 'tom conciso e direto' };
+    return `És o TCC Master Pro, especialista em pesquisa académica brasileira. Projeto: "${project?.title || 'TCC'}". Usa ${toneMap[tone] || 'tom formal'}. Escreve aproximadamente ${wordTarget} palavras quando aplicável. ABNT sempre. Português do Brasil.`;
+  };
+
   const callAI = async () => {
     if (!input.trim()) return;
     if (!activeProjectId) { setError('Cria ou seleciona um projeto primeiro!'); return; }
-    setLoading(true); setError(null); setResult('');
-    const prompt = tool ? `${tool.prompt}${input}` : input;
-    const sys = `És o TCC Master Pro, assistente especialista em pesquisa académica brasileira. Projeto atual: "${project?.title || 'TCC'}". Responde sempre em Português do Brasil com rigor científico e normas ABNT.`;
+    setLoading(true); setError(null); setResult(''); setChatMessages([]);
+    const userPrompt = tool ? `${tool.prompt}${input}` : input;
+    const messages = [
+      { role: 'user', parts: [{ text: buildSys() + '\n\n' + userPrompt }] }
+    ];
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          systemInstruction: { parts: [{ text: sys }] },
-          generationConfig: { temperature: 0.7, maxOutputTokens: 4096 }
-        })
+      const out = await streamAI(messages, (partial) => {
+        setResult(partial);
+        if (resultRef.current) resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
       });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error?.message || `HTTP ${res.status}`);
-      }
-      const data = await res.json();
-      const out = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (!out) throw new Error('Resposta vazia da API');
-      setResult(out);
+      setChatMessages([{ role: 'user', parts: [{ text: userPrompt }] }, { role: 'model', parts: [{ text: out }] }]);
       const genId = Date.now()+'';
-      const genData = {
+      await setDoc(doc(db, 'users', USER_ID, 'generations', genId), {
         pid: activeProjectId, toolId: activeTab,
         toolName: tool?.name || 'Chat', input, output: out, at: Date.now()
-      };
-      await setDoc(doc(db, 'users', USER_ID, 'generations', genId), genData);
+      });
       setSavedAt(new Date());
-    } catch (e) {
-      setError(`Erro: ${e.message}`);
+    } catch (e) { setError(`Erro: ${e.message}`);
     } finally { setLoading(false); }
   };
+
+  const regenerate = async () => {
+    if (!input.trim() || !activeProjectId) return;
+    setLoading(true); setError(null); setResult(''); setChatMessages([]);
+    const userPrompt = (tool ? `${tool.prompt}${input}` : input) + ' (Gera uma versão diferente e complementar da anterior.)';
+    try {
+      const out = await streamAI([{ role: 'user', parts: [{ text: buildSys() + '\n\n' + userPrompt }] }], setResult);
+      setChatMessages([{ role: 'user', parts: [{ text: userPrompt }] }, { role: 'model', parts: [{ text: out }] }]);
+      const genId = Date.now()+'';
+      await setDoc(doc(db, 'users', USER_ID, 'generations', genId), {
+        pid: activeProjectId, toolId: activeTab,
+        toolName: tool?.name || 'Chat', input, output: out, at: Date.now()
+      });
+      setSavedAt(new Date());
+    } catch (e) { setError(`Erro: ${e.message}`);
+    } finally { setLoading(false); }
+  };
+
+  const sendFollowUp = async () => {
+    if (!followUpInput.trim() || !result) return;
+    setFollowUpLoading(true);
+    const newMessages = [...chatMessages, { role: 'user', parts: [{ text: followUpInput }] }];
+    const userQ = followUpInput;
+    setFollowUpInput('');
+    try {
+      const msgWithSys = [{ role: 'user', parts: [{ text: buildSys() }] }, { role: 'model', parts: [{ text: 'Entendido. Estou pronto para ajudar com o seu TCC.' }] }, ...newMessages];
+      let answer = '';
+      await streamAI(msgWithSys, (partial) => { answer = partial; });
+      setChatMessages([...newMessages, { role: 'model', parts: [{ text: answer }] }]);
+    } catch (e) { setError(`Erro no follow-up: ${e.message}`);
+    } finally { setFollowUpLoading(false); }
+  };
+
 
   const createProject = async () => {
     const title = prompt('Nome do projeto TCC (ex: TCC Direito Civil):');
@@ -513,7 +597,7 @@ export default function App() {
 
                 {/* Ferramentas rápidas */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {TOOLS.slice(0, 6).map(t => (
+                  {TOOLS.slice(0, 9).map(t => (
                     <button key={t.id} onClick={() => setActiveTab(t.id)} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-left hover:border-indigo-400 hover:shadow-lg transition-all group">
                       <div className={`w-9 h-9 rounded-xl ${t.bg} ${t.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>{t.icon}</div>
                       <p className="text-sm font-bold text-slate-800 dark:text-white leading-tight">{t.name}</p>
@@ -581,6 +665,20 @@ export default function App() {
                     </div>
                   </div>
                   <div className="p-6 space-y-4">
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5"><Sliders className="w-3 h-3"/> Tom de Escrita</label>
+                        <select value={tone} onChange={e=>setTone(e.target.value)} className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-all">
+                          {TONES.map(t=><option key={t.id} value={t.id}>{t.label} - {t.desc}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1.5"><Target className="w-3 h-3"/> Extensão Média</label>
+                        <select value={wordTarget} onChange={e=>setWordTarget(Number(e.target.value))} className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 outline-none focus:border-indigo-500 transition-all">
+                          {WORD_TARGETS.map(w=><option key={w} value={w}>~{w} palavras</option>)}
+                        </select>
+                      </div>
+                    </div>
                     <textarea
                       value={input}
                       onChange={e => setInput(e.target.value)}
@@ -624,10 +722,37 @@ export default function App() {
                       </div>
                     </div>
                     <div className="p-6">
-                      <div
-                        className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed"
-                        dangerouslySetInnerHTML={{ __html: `<p class="mb-4">${renderMarkdown(result)}</p>` }}
-                      />
+                      <div className="space-y-4 mb-6 max-h-[60vh] overflow-y-auto pr-2">
+                         {chatMessages.length > 0 ? chatMessages.map((msg, i) => (
+                           <div key={i} className={`p-5 rounded-2xl ${msg.role === 'user' ? 'bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 ml-8' : 'bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 mr-8 shadow-sm'}`}>
+                             <p className="font-black text-[10px] uppercase tracking-widest mb-3 flex items-center gap-2 opacity-60">
+                               {msg.role === 'user' ? <><span className="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-white text-[8px]">VC</span> Você</> : <><Sparkles className="w-3 h-3"/> TCC Master Pro</>}
+                             </p>
+                             <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.parts[0].text) }} />
+                           </div>
+                         )) : (
+                           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm mr-8">
+                             <p className="font-black text-[10px] uppercase tracking-widest mb-3 flex items-center gap-2 opacity-60">
+                               <Sparkles className="w-3 h-3"/> TCC Master Pro
+                             </p>
+                             <div className="prose prose-sm dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: renderMarkdown(result) }} />
+                           </div>
+                         )}
+                         <div ref={resultRef} />
+                      </div>
+                      
+                      {/* Follow-up input */}
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <input type="text" value={followUpInput} onChange={e=>setFollowUpInput(e.target.value)} onKeyDown={e=>{if(e.key==='Enter') sendFollowUp()}} disabled={followUpLoading || loading} placeholder="Pedir alteração, continuação ou tirar dúvida..." className="w-full p-3.5 pr-12 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all" />
+                          <button onClick={sendFollowUp} disabled={followUpLoading || loading || !followUpInput.trim()} className="absolute right-2 top-2 bottom-2 bg-indigo-600 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white w-10 flex items-center justify-center rounded-lg transition-all hover:bg-indigo-700">
+                             {followUpLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <Send className="w-4 h-4"/>}
+                          </button>
+                        </div>
+                        <button onClick={regenerate} disabled={loading || followUpLoading} className="bg-orange-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white px-5 rounded-xl hover:bg-orange-600 transition-all flex items-center gap-2 text-sm font-black shadow-lg shadow-orange-500/20">
+                          {loading && !followUpLoading ? <Loader2 className="w-4 h-4 animate-spin"/> : <RotateCcw className="w-4 h-4"/>} Refazer
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
