@@ -406,9 +406,9 @@ export default function App() {
             <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
               <Sparkles className="w-5 h-5 text-white"/>
             </div>
-            <div>
-              <h1 className="font-black text-sm leading-none">TCC <span className="text-indigo-500">Master</span></h1>
-              <p className="text-[10px] text-slate-400 font-medium tracking-wide leading-tight mt-0.5">Marcio de Souza</p>
+            <div className="flex flex-col">
+              <h1 className="font-black text-lg tracking-tight leading-none text-slate-800 dark:text-white">TCC <span className="text-indigo-500">Master</span></h1>
+              <p className="text-xs text-slate-500 font-medium tracking-wide mt-1">Marcio de Souza</p>
             </div>
           </div>
 
