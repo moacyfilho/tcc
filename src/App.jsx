@@ -98,6 +98,7 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState([]);
   const [followUpInput, setFollowUpInput] = useState('');
   const [followUpLoading, setFollowUpLoading] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const resultRef = useRef(null);
 
   const [timer, setTimer] = useState(25 * 60);
@@ -488,6 +489,9 @@ export default function App() {
           <div className="ml-auto flex items-center gap-2">
             <button onClick={() => setDarkMode(!darkMode)} className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
               {darkMode ? <Sun className="w-4 h-4"/> : <Moon className="w-4 h-4"/>}
+            </button>
+            <button onClick={() => setShowHelp(true)} className="p-2 rounded-xl text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all">
+              <HelpCircle className="w-5 h-5"/>
             </button>
             {savedAt && <span className="hidden lg:flex items-center gap-1 text-[10px] text-green-500 font-bold"><Save className="w-3 h-3"/> Salvo {savedAt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>}
             {activeProjectId && wordCount > 0 && (
@@ -880,6 +884,54 @@ export default function App() {
           ))}
         </div>
       </main>
+
+      {/* HELP MODAL */}
+      {showHelp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <h3 className="text-lg font-black flex items-center gap-2"><HelpCircle className="w-5 h-5 text-indigo-500"/> Ajuda & Dicas</h3>
+              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                <Trash2 className="w-4 h-4 opacity-0" /> {/* Spacer */}
+                <span className="absolute top-6 right-6 font-bold text-lg">✕</span>
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-6">
+              <div>
+                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><Timer className="w-4 h-4"/> Técnica Pomodoro</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  O relógio no canto esquerdo ajuda-te a manter o foco. Trabalha sem interrupções durante 25 minutos e depois faz uma pausa de 5 minutos.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4"/> Como usar as ferramentas</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Escolhe uma ferramenta no menu, insere o teu tema ou texto e clica em gerar. 
+                  Podes alterar o <strong>Tom de Escrita</strong> e a <strong>Extensão Média (Palavras)</strong> antes de gerar.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><MessageSquare className="w-4 h-4"/> Chat de Follow-up</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Após a IA gerar o texto, podes usar a caixa de texto em baixo para pedir alterações, como <em>"Reescreve o segundo parágrafo"</em> ou <em>"Adiciona mais citações"</em>.
+                </p>
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><BarChart3 className="w-4 h-4"/> Capítulos & Tarefas</h4>
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Usa o separador <strong>Progresso</strong> para marcar as tuas etapas como concluídas. E no <strong>Dashboard</strong> podes criar os teus próprios passos do TCC.
+                </p>
+              </div>
+            </div>
+            <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
+              <button onClick={() => setShowHelp(false)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20">
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
