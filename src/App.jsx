@@ -1104,9 +1104,26 @@ export default function App() {
                     <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Dashboard (Início) & RPG</p>
                     <p className="text-xs text-slate-600 dark:text-slate-400">Visão geral do teu projeto. Ganhe <strong>XP e suba de Nível (RPG)</strong> ao completar Tarefas, marcar Capítulos como feitos e gerar palavras! Assista aos confetes em cada vitória.</p>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Notas do Projeto</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Um bloco de notas livre. Ideal para colar feedbacks do orientador, links úteis e ideias soltas que não deves perder.</p>
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-green-700 dark:text-green-400 mb-1">Meu TCC (Editor por Capítulos)</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">O editor principal do seu TCC. Tem uma <strong>aba separada para cada capítulo</strong>: Introdução, Referencial Teórico, Metodologia, Resultados, Discussão, Conclusão e Referências.</p>
+                    <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 list-disc ml-4">
+                      <li>Cada capítulo mostra o contador de palavras na aba</li>
+                      <li>Escreve manualmente ou cola o texto gerado pela IA</li>
+                      <li>Salvo automaticamente na nuvem em tempo real</li>
+                      <li>Botão <strong>PDF Completo</strong> exporta todos os capítulos em ABNT com quebra de página</li>
+                      <li>Capítulos já concluídos aparecem com ✓ verde na aba</li>
+                    </ul>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/50 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-green-700 dark:text-green-400 mb-1">Botão "Inserir no Meu TCC" (nos Resultados da IA)</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">Ao gerar qualquer texto com a IA, aparece um botão verde <strong>"Inserir no Meu TCC"</strong> na barra de ações do resultado.</p>
+                    <ul className="text-xs text-slate-600 dark:text-slate-400 space-y-1 list-disc ml-4">
+                      <li>Clica no botão → escolhe o capítulo no menu</li>
+                      <li>O texto é colado automaticamente no capítulo escolhido</li>
+                      <li>O app redireciona para o editor naquele capítulo</li>
+                      <li>Se o capítulo já tinha texto, o novo é adicionado ao final</li>
+                    </ul>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
                     <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Progresso & Compilador</p>
