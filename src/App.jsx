@@ -403,7 +403,7 @@ export default function App() {
         <div className="flex flex-col h-full p-4 gap-4">
           {/* Logo */}
           <div className="flex items-center gap-3 px-2 py-3 cursor-pointer" onClick={() => setActiveTab('home')}>
-            <img src="https://upload.wikimedia.org/wikipedia/pt/a/ac/CRVascodaGama.svg" alt="Vasco da Gama" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
+            <img src="https://logodetimes.com/times/vasco-da-gama/logo-vasco-da-gama-256.png" alt="Vasco da Gama" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <h1 className="font-black text-lg tracking-tight leading-none text-slate-800 dark:text-white">TCC <span className="text-indigo-500">Master</span></h1>
               <p className="text-xs text-slate-500 font-medium tracking-wide mt-1">Marcio de Souza</p>
