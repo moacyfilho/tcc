@@ -888,44 +888,87 @@ export default function App() {
       {/* HELP MODAL */}
       {showHelp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col max-h-[90vh]">
             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <h3 className="text-lg font-black flex items-center gap-2"><HelpCircle className="w-5 h-5 text-indigo-500"/> Ajuda & Dicas</h3>
-              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
-                <Trash2 className="w-4 h-4 opacity-0" /> {/* Spacer */}
-                <span className="absolute top-6 right-6 font-bold text-lg">✕</span>
+              <h3 className="text-lg font-black flex items-center gap-2"><HelpCircle className="w-5 h-5 text-indigo-500"/> Ajuda & Guia Completo</h3>
+              <button onClick={() => setShowHelp(false)} className="text-slate-400 hover:text-red-500 p-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex items-center justify-center">
+                <span className="font-bold text-lg leading-none">✕</span>
               </button>
             </div>
-            <div className="p-6 overflow-y-auto space-y-6">
-              <div>
-                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><Timer className="w-4 h-4"/> Técnica Pomodoro</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  O relógio no canto esquerdo ajuda-te a manter o foco. Trabalha sem interrupções durante 25 minutos e depois faz uma pausa de 5 minutos.
+            
+            <div className="p-6 overflow-y-auto space-y-8">
+              
+              <section>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Layout className="w-4 h-4 text-indigo-500"/> Menu Principal</h4>
+                <div className="space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Dashboard (Início)</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Visão geral do teu projeto. Aqui consegues criar metas rápidas (TO-DOs) e acompanhar quantas partes do TCC já foram escritas.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Notas do Projeto</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Um bloco de notas livre. Ideal para colar feedbacks do orientador, links úteis e ideias soltas que não deves perder.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Progresso & Compilador</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">O <strong>Progresso</strong> permite "dar o check" em cada capítulo terminado. O <strong>Compilador</strong> junta tudo o que já geraste com a IA num único documento.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Sparkles className="w-4 h-4 text-indigo-500"/> Escrita Inteligente (IA)</h4>
+                <div className="space-y-3">
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">1. Escolhe a Ferramenta</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Tens 16 ferramentas à escolha. Queres criar o Resumo? Clica em "Resumo e Abstract". Precisas definir o tema? Vai a "Problema de Pesquisa".</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">2. Ajusta o Tom e Extensão</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Antes de dar Enter, usa os comandos rápidos: "Formal" fica estilo ABNT clássico, "Conciso" resume a ideia. E escolhe também o número de palavras alvo.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">3. Chat de Follow-Up (Edição Contínua)</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Se o trecho ficou quase perfeito, não o apagues! Desce um pouco a tela e usa o Chat para instruir a IA: <em>"Substitui a palavra X, tira a segunda frase, aplica a citação do autor Silva"</em>. Ela lembra-se de tudo!</p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><PenTool className="w-4 h-4 text-indigo-500"/> Ferramentas Destacadas</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Paráfrase Anti-Plágio</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Reescreve textos de outras fontes com novas palavras, mantendo o sentido.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Gerador de Referências</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Converte nomes de livros ou links no formato rígido da ABNT.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Análise de Artigo</p>
+                    <p className="text-[10px] text-slate-500 mt-1">Cola um PDF imenso e a IA extrai-te a metodologia, teoria e considerações.</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
+                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Criar Questionário</p>
+                    <p className="text-[10px] text-slate-500 mt-1">A IA faz um roteiro completo de perguntas prontas para enviar pro Google Forms.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Timer className="w-4 h-4 text-indigo-500"/> Pomodoro & Foco Absoluto</h4>
+                <p className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl leading-relaxed">
+                  Na barra lateral inferior, há um pequeno cronómetro. A Técnica Pomodoro serve para combater a temida <em>"ansiedade do TCC"</em>. 
+                  Como se usa? Dá <strong>Play</strong>, e escreve 100% focado sem ver WhatsApp ou Instagram, até o tempo chegar a zero. Depois disso, pausa e vai beber um café.
                 </p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><Sparkles className="w-4 h-4"/> Como usar as ferramentas</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Escolhe uma ferramenta no menu, insere o teu tema ou texto e clica em gerar. 
-                  Podes alterar o <strong>Tom de Escrita</strong> e a <strong>Extensão Média (Palavras)</strong> antes de gerar.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><MessageSquare className="w-4 h-4"/> Chat de Follow-up</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Após a IA gerar o texto, podes usar a caixa de texto em baixo para pedir alterações, como <em>"Reescreve o segundo parágrafo"</em> ou <em>"Adiciona mais citações"</em>.
-                </p>
-              </div>
-              <div>
-                <h4 className="font-bold text-sm text-indigo-500 mb-2 flex items-center gap-2"><BarChart3 className="w-4 h-4"/> Capítulos & Tarefas</h4>
-                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  Usa o separador <strong>Progresso</strong> para marcar as tuas etapas como concluídas. E no <strong>Dashboard</strong> podes criar os teus próprios passos do TCC.
-                </p>
-              </div>
+              </section>
+
             </div>
+            
             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
-              <button onClick={() => setShowHelp(false)} className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all shadow-lg shadow-indigo-500/20">
-                Entendido
+              <button onClick={() => setShowHelp(false)} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black transition-all shadow-lg shadow-indigo-500/20">
+                Pronto, entendi! Vamos ao TCC 🚀
               </button>
             </div>
           </div>
