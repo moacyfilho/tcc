@@ -5,17 +5,25 @@ import {
   Compass, CheckCircle2, Circle, ListTodo, GraduationCap,
   Moon, Sun, Plus, Target, BarChart3, Timer, BookMarked,
   MessageCircleWarning, ArrowUpRight, FileJson, Pause, Play,
-  StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save
+  StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save, Cloud
 } from 'lucide-react';
+import { db } from './firebase';
+import {
+  collection, doc, setDoc, deleteDoc, onSnapshot,
+  query, orderBy, serverTimestamp, getDoc
+} from 'firebase/firestore';
 
 // --- CONFIG ---
 const API_KEY = "AIzaSyDL4KUxvFd8eueVQG2N-qpXoaTLjxSItqs";
 const MODEL = "gemini-2.5-flash";
 const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${API_KEY}`;
 
-// --- LOCAL STORAGE ---
-const load = (key, def) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } };
-const save = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+// LocalStorage apenas para preferências de UI
+const loadPref = (key, def) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } };
+const savePref = (key, val) => { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} };
+
+// ID do utilizador fixo (app pessoal do Marcio)
+const USER_ID = 'marcio-souza';
 
 // --- FERRAMENTAS ---
 const TOOLS = [
@@ -48,23 +56,21 @@ function renderMarkdown(text) {
 }
 
 export default function App() {
-  const [darkMode, setDarkMode] = useState(() => load('tcc-dark', true));
+  const [darkMode, setDarkMode] = useState(() => loadPref('tcc-dark', true));
   const [activeTab, setActiveTab] = useState('home');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState('');
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [dbLoading, setDbLoading] = useState(true);
 
-  const [projects, setProjects] = useState(() => load('tcc-projects', []));
-  const [activeProjectId, setActiveProjectId] = useState(() => {
-    const ps = load('tcc-projects', []);
-    return ps.length > 0 ? ps[0].id : null;
-  });
-  const [generations, setGenerations] = useState(() => load('tcc-gen2', []));
-  const [tasks, setTasks] = useState(() => load('tcc-tasks2', []));
-  const [notes, setNotes] = useState(() => load('tcc-notes', {}));
-  const [chapterStatus, setChapterStatus] = useState(() => load('tcc-chapters', {}));
+  const [projects, setProjects] = useState([]);
+  const [activeProjectId, setActiveProjectId] = useState(null);
+  const [generations, setGenerations] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [notes, setNotes] = useState({});
+  const [chapterStatus, setChapterStatus] = useState({});
 
   const [timer, setTimer] = useState(25 * 60);
   const [timerActive, setTimerActive] = useState(false);
@@ -72,15 +78,48 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
   const [savedAt, setSavedAt] = useState(null);
   const wordCount = useMemo(() => result ? result.split(/\s+/).filter(Boolean).length : 0, [result]);
-  const totalWords = useMemo(() => projGen.reduce((acc, g) => acc + g.output.split(/\s+/).filter(Boolean).length, 0), [projGen]);
 
-  // persist
-  useEffect(() => save('tcc-dark', darkMode), [darkMode]);
-  useEffect(() => { save('tcc-projects', projects); setSavedAt(new Date()); }, [projects]);
-  useEffect(() => { save('tcc-gen2', generations); setSavedAt(new Date()); }, [generations]);
-  useEffect(() => { save('tcc-tasks2', tasks); setSavedAt(new Date()); }, [tasks]);
-  useEffect(() => { save('tcc-notes', notes); setSavedAt(new Date()); }, [notes]);
-  useEffect(() => { save('tcc-chapters', chapterStatus); setSavedAt(new Date()); }, [chapterStatus]);
+  // --- FIRESTORE: Listeners em Tempo Real ---
+  useEffect(() => {
+    setDbLoading(true);
+    // Projetos
+    const unsubProjects = onSnapshot(
+      query(collection(db, 'users', USER_ID, 'projects'), orderBy('createdAt', 'desc')),
+      (snap) => {
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        setProjects(data);
+        setActiveProjectId(prev => prev || (data.length > 0 ? data[0].id : null));
+        setDbLoading(false);
+      },
+      (err) => { console.error('Firestore error:', err); setDbLoading(false); }
+    );
+    // Textos gerados
+    const unsubGen = onSnapshot(
+      query(collection(db, 'users', USER_ID, 'generations'), orderBy('at', 'desc')),
+      (snap) => setGenerations(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    // Tarefas
+    const unsubTasks = onSnapshot(
+      query(collection(db, 'users', USER_ID, 'tasks'), orderBy('order', 'asc')),
+      (snap) => setTasks(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    // Notas e capítulos (documento de configuração)
+    const unsubConfig = onSnapshot(
+      doc(db, 'users', USER_ID, 'config', 'main'),
+      (snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.notes) setNotes(data.notes);
+          if (data.chapterStatus) setChapterStatus(data.chapterStatus);
+        }
+      }
+    );
+    return () => { unsubProjects(); unsubGen(); unsubTasks(); unsubConfig(); };
+  }, []);
+
+  // Dark mode preference (local)
+  useEffect(() => savePref('tcc-dark', darkMode), [darkMode]);
+
 
   // dark mode class
   useEffect(() => {
@@ -187,43 +226,70 @@ export default function App() {
       const out = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!out) throw new Error('Resposta vazia da API');
       setResult(out);
-      setGenerations(prev => [{
-        id: Date.now()+'', pid: activeProjectId, toolId: activeTab,
+      const genId = Date.now()+'';
+      const genData = {
+        pid: activeProjectId, toolId: activeTab,
         toolName: tool?.name || 'Chat', input, output: out, at: Date.now()
-      }, ...prev]);
+      };
+      await setDoc(doc(db, 'users', USER_ID, 'generations', genId), genData);
+      setSavedAt(new Date());
     } catch (e) {
       setError(`Erro: ${e.message}`);
     } finally { setLoading(false); }
   };
 
-  const createProject = () => {
+  const createProject = async () => {
     const title = prompt('Nome do projeto TCC (ex: TCC Direito Civil):');
     if (!title?.trim()) return;
-    const p = { id: Date.now()+'', title: title.trim(), createdAt: Date.now() };
-    setProjects(prev => [...prev, p]);
-    setActiveProjectId(p.id);
+    const id = Date.now()+'';
+    await setDoc(doc(db, 'users', USER_ID, 'projects', id), {
+      title: title.trim(), createdAt: Date.now()
+    });
+    setActiveProjectId(id);
+    setSavedAt(new Date());
   };
 
-  const deleteProject = () => {
+  const deleteProject = async () => {
     if (!activeProjectId || !window.confirm('Eliminar projeto e todos os dados?')) return;
+    await deleteDoc(doc(db, 'users', USER_ID, 'projects', activeProjectId));
+    // Apaga textos e tarefas do projeto
+    const pGen = generations.filter(g => g.pid === activeProjectId);
+    const pTasks = tasks.filter(t => t.pid === activeProjectId);
+    await Promise.all([
+      ...pGen.map(g => deleteDoc(doc(db, 'users', USER_ID, 'generations', g.id))),
+      ...pTasks.map(t => deleteDoc(doc(db, 'users', USER_ID, 'tasks', t.id)))
+    ]);
     const remaining = projects.filter(p => p.id !== activeProjectId);
-    setProjects(remaining);
-    setGenerations(prev => prev.filter(g => g.pid !== activeProjectId));
-    setTasks(prev => prev.filter(t => t.pid !== activeProjectId));
     setActiveProjectId(remaining[0]?.id || null);
     setActiveTab('home');
   };
 
-  const addTask = () => {
+  const addTask = async () => {
     const text = prompt('Nome da etapa do TCC:');
     if (!text?.trim() || !activeProjectId) return;
-    setTasks(prev => [...prev, { id: Date.now()+''+Math.random(), pid: activeProjectId, text: text.trim(), done: false, order: prev.length }]);
+    const id = Date.now()+''+Math.random();
+    await setDoc(doc(db, 'users', USER_ID, 'tasks', id), {
+      pid: activeProjectId, text: text.trim(), done: false, order: tasks.length
+    });
+    setSavedAt(new Date());
   };
 
-  const toggleChapter = (ch) => {
+  const toggleChapter = async (ch) => {
     const key = `${activeProjectId}-${ch}`;
-    setChapterStatus(prev => ({ ...prev, [key]: !prev[key] }));
+    const updated = { ...chapterStatus, [key]: !chapterStatus[key] };
+    setChapterStatus(updated);
+    await setDoc(doc(db, 'users', USER_ID, 'config', 'main'),
+      { chapterStatus: updated, notes }, { merge: true });
+    setSavedAt(new Date());
   };
+  const updateNote = async (val) => {
+    const updated = { ...notes, [activeProjectId]: val };
+    setNotes(updated);
+    await setDoc(doc(db, 'users', USER_ID, 'config', 'main'),
+      { notes: updated, chapterStatus }, { merge: true });
+    setSavedAt(new Date());
+  };
+
   const isChapterDone = (ch) => chapterStatus[`${activeProjectId}-${ch}`];
   const completedChapters = CHAPTERS.filter(ch => isChapterDone(ch)).length;
 
@@ -392,11 +458,14 @@ export default function App() {
                     </div>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {projTasks.map(t => (
-                        <button key={t.id} onClick={() => setTasks(prev => prev.map(x => x.id===t.id ? {...x, done:!x.done} : x))}
+                        <button key={t.id} onClick={async () => {
+                            await setDoc(doc(db, 'users', USER_ID, 'tasks', t.id), { ...t, done: !t.done });
+                            setSavedAt(new Date());
+                          }}
                           className="flex items-center gap-2 w-full text-left p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group">
                           {t.done ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0"/> : <Circle className="w-5 h-5 text-slate-300 flex-shrink-0"/>}
                           <span className={`text-xs font-medium ${t.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}`}>{t.text}</span>
-                          <Trash2 className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 ml-auto" onClick={e => { e.stopPropagation(); setTasks(prev => prev.filter(x => x.id!==t.id)); }}/>
+                          <Trash2 className="w-3 h-3 text-slate-300 opacity-0 group-hover:opacity-100 ml-auto" onClick={async e => { e.stopPropagation(); await deleteDoc(doc(db, 'users', USER_ID, 'tasks', t.id)); setSavedAt(new Date()); }}/>
                         </button>
                       ))}
                       {projTasks.length === 0 && <p className="text-xs text-slate-400 text-center py-4">Adiciona etapas do TCC</p>}
@@ -490,7 +559,7 @@ export default function App() {
                   ? <p className="text-slate-400 text-sm">Seleciona um projeto para ver as notas</p>
                   : <textarea
                       value={projNote}
-                      onChange={e => setNotes(prev => ({ ...prev, [activeProjectId]: e.target.value }))}
+                      onChange={e => updateNote(e.target.value)}
                       placeholder="Escreve aqui observações do orientador, citações importantes, ideias rápidas..."
                       className="w-full h-96 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
                     />
