@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Sparkles, BookOpen, Layout, PenTool, Quote, Send, Loader2,
+  Sparkles, BookOpen, Layout, PenTool, Quote, Loader2,
   Copy, Check, Home, FileText, History, Trash2, Download,
-  Compass, CheckCircle2, Circle, ListTodo, Wand2, GraduationCap,
+  Compass, CheckCircle2, Circle, ListTodo, GraduationCap,
   Moon, Sun, Plus, Target, BarChart3, Timer, BookMarked,
   MessageCircleWarning, ArrowUpRight, FileJson, Pause, Play,
-  ChevronDown, ChevronUp, StickyNote, AlignLeft, RefreshCw
+  StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save
 } from 'lucide-react';
 
 // --- CONFIG ---
@@ -69,15 +69,18 @@ export default function App() {
   const [timer, setTimer] = useState(25 * 60);
   const [timerActive, setTimerActive] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [historySearch, setHistorySearch] = useState('');
+  const [savedAt, setSavedAt] = useState(null);
   const wordCount = useMemo(() => result ? result.split(/\s+/).filter(Boolean).length : 0, [result]);
+  const totalWords = useMemo(() => projGen.reduce((acc, g) => acc + g.output.split(/\s+/).filter(Boolean).length, 0), [projGen]);
 
   // persist
   useEffect(() => save('tcc-dark', darkMode), [darkMode]);
-  useEffect(() => save('tcc-projects', projects), [projects]);
-  useEffect(() => save('tcc-gen2', generations), [generations]);
-  useEffect(() => save('tcc-tasks2', tasks), [tasks]);
-  useEffect(() => save('tcc-notes', notes), [notes]);
-  useEffect(() => save('tcc-chapters', chapterStatus), [chapterStatus]);
+  useEffect(() => { save('tcc-projects', projects); setSavedAt(new Date()); }, [projects]);
+  useEffect(() => { save('tcc-gen2', generations); setSavedAt(new Date()); }, [generations]);
+  useEffect(() => { save('tcc-tasks2', tasks); setSavedAt(new Date()); }, [tasks]);
+  useEffect(() => { save('tcc-notes', notes); setSavedAt(new Date()); }, [notes]);
+  useEffect(() => { save('tcc-chapters', chapterStatus); setSavedAt(new Date()); }, [chapterStatus]);
 
   // dark mode class
   useEffect(() => {
@@ -95,9 +98,70 @@ export default function App() {
   const project = useMemo(() => projects.find(p => p.id === activeProjectId), [projects, activeProjectId]);
   const tool = useMemo(() => TOOLS.find(t => t.id === activeTab), [activeTab]);
   const projGen = useMemo(() => generations.filter(g => g.pid === activeProjectId).sort((a,b) => b.at - a.at), [generations, activeProjectId]);
+  const filteredGen = useMemo(() => {
+    if (!historySearch.trim()) return projGen;
+    const q = historySearch.toLowerCase();
+    return projGen.filter(g => g.input.toLowerCase().includes(q) || g.output.toLowerCase().includes(q) || g.toolName.toLowerCase().includes(q));
+  }, [projGen, historySearch]);
   const projTasks = useMemo(() => tasks.filter(t => t.pid === activeProjectId).sort((a,b) => (a.order||0)-(b.order||0)), [tasks, activeProjectId]);
   const completedTasks = projTasks.filter(t => t.done).length;
   const projNote = notes[activeProjectId] || '';
+
+  // PDF export: abre janela de impressão com conteúdo formatado
+  const exportPDF = useCallback((content, title) => {
+    const w = window.open('', '_blank');
+    w.document.write(`
+      <!DOCTYPE html><html lang="pt-BR"><head>
+      <meta charset="UTF-8"/>
+      <title>${title || 'TCC'}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.8; color: #000; background: #fff; padding: 3cm 3cm 2cm 4cm; }
+        h1 { font-size: 14pt; font-weight: bold; text-transform: uppercase; text-align: center; margin: 24pt 0 12pt; }
+        h2 { font-size: 13pt; font-weight: bold; text-transform: uppercase; margin: 20pt 0 8pt; }
+        h3 { font-size: 12pt; font-weight: bold; margin: 16pt 0 6pt; }
+        p { margin-bottom: 10pt; text-align: justify; text-indent: 1.25cm; }
+        ul, ol { margin: 8pt 0 8pt 1.25cm; }
+        li { margin-bottom: 4pt; }
+        strong { font-weight: bold; }
+        em { font-style: italic; }
+        .cover { text-align: center; margin-bottom: 60pt; }
+        .cover h1 { font-size: 16pt; margin: 40pt 0 16pt; }
+        .cover .author { font-size: 13pt; margin: 8pt 0; font-weight: bold; }
+        .cover .date { margin-top: 40pt; font-size: 11pt; }
+        @media print { body { padding: 3cm 3cm 2cm 4cm; } }
+      </style>
+      </head><body>
+      <div class="cover">
+        <p style="font-weight:bold;">Marcio de Souza</p>
+        <h1>${title || project?.title || 'TCC'}</h1>
+        <p class="date">${new Date().toLocaleDateString('pt-BR', {year:'numeric',month:'long'})}</p>
+      </div>
+      ${content}
+      </body></html>`);
+    w.document.close();
+    setTimeout(() => { w.print(); }, 800);
+  }, [project]);
+
+  const exportCurrentResultPDF = () => {
+    if (!result) return;
+    const html = `<h1>${tool?.name || 'Resultado'}</h1><p style="text-indent:0;font-style:italic;margin-bottom:16pt;">Entrada: ${input.substring(0,200)}${input.length>200?'...':''}</p>${result.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'</p><p>')}`;
+    exportPDF(html, tool?.name || 'Resultado');
+  };
+
+  const exportFullTCCPDF = () => {
+    if (!projGen.length) return;
+    const grouped = TOOLS.map(t => ({ tool: t, items: projGen.filter(g => g.toolId === t.id) })).filter(g => g.items.length > 0);
+    const html = grouped.map(g => `
+      <h1>${g.tool.name}</h1>
+      ${g.items.map(item => `
+        <p style="font-style:italic;font-size:10pt;text-indent:0;">Gerado em: ${new Date(item.at).toLocaleString('pt-BR')}</p>
+        ${item.output.replace(/^### (.+)$/gm,'<h3>$1</h3>').replace(/^## (.+)$/gm,'<h2>$1</h2>').replace(/^# (.+)$/gm,'<h1>$1</h1>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\*(.+?)\*/g,'<em>$1</em>').replace(/^- (.+)$/gm,'<li>$1</li>').replace(/\n\n/g,'</p><p>')}
+        <p style="page-break-after:always;"></p>
+      `).join('')}
+    `).join('');
+    exportPDF(html, `TCC Completo - ${project?.title || 'Projeto'}`);
+  };
 
   const callAI = async () => {
     if (!input.trim()) return;
@@ -221,6 +285,7 @@ export default function App() {
           <nav className="space-y-0.5 flex-1 overflow-y-auto">
             <SBtn id="home" icon={<Home className="w-4 h-4"/>} label="Dashboard"/>
             <SBtn id="progress" icon={<BarChart3 className="w-4 h-4"/>} label="Progresso do TCC"/>
+            <SBtn id="compiler" icon={<BookCopy className="w-4 h-4"/>} label="Compilar TCC Completo"/>
             <SBtn id="notes" icon={<StickyNote className="w-4 h-4"/>} label="Notas do Projeto"/>
             <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"/>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1">Ferramentas IA</p>
@@ -275,8 +340,14 @@ export default function App() {
             <button onClick={() => setDarkMode(!darkMode)} className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
               {darkMode ? <Sun className="w-4 h-4"/> : <Moon className="w-4 h-4"/>}
             </button>
+            {savedAt && <span className="hidden lg:flex items-center gap-1 text-[10px] text-green-500 font-bold"><Save className="w-3 h-3"/> Salvo {savedAt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</span>}
             {activeProjectId && wordCount > 0 && (
               <span className="text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 px-3 py-1 rounded-full font-bold">{wordCount} palavras</span>
+            )}
+            {activeProjectId && projGen.length > 0 && (
+              <button onClick={exportFullTCCPDF} className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-600 border border-red-200 dark:border-red-800 rounded-xl text-xs font-black hover:bg-red-100 transition-all">
+                <Printer className="w-3.5 h-3.5"/> Exportar TCC PDF
+              </button>
             )}
           </div>
         </header>
@@ -353,6 +424,7 @@ export default function App() {
                     <h4 className="font-black text-sm flex items-center gap-2"><BarChart3 className="w-4 h-4 text-indigo-500"/> Stats</h4>
                     {[
                       { label: 'Textos Gerados', val: projGen.length, color: 'text-indigo-500' },
+                      { label: 'Total de Palavras', val: totalWords.toLocaleString('pt-BR'), color: 'text-violet-500' },
                       { label: 'Etapas Concluídas', val: `${completedTasks}/${projTasks.length}`, color: 'text-green-500' },
                       { label: 'Capítulos OK', val: `${completedChapters}/${CHAPTERS.length}`, color: 'text-amber-500' },
                     ].map(s => (
@@ -361,6 +433,11 @@ export default function App() {
                         <span className={`text-xl font-black ${s.color}`}>{s.val}</span>
                       </div>
                     ))}
+                    {activeProjectId && projGen.length > 0 && (
+                      <button onClick={exportFullTCCPDF} className="w-full flex items-center justify-center gap-2 py-2.5 bg-red-500 text-white rounded-xl text-xs font-black hover:bg-red-600 transition-all mt-2">
+                        <Printer className="w-4 h-4"/> Exportar TCC em PDF
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -468,6 +545,9 @@ export default function App() {
                         <button onClick={exportMd} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all">
                           <FileJson className="w-3.5 h-3.5"/> .MD
                         </button>
+                        <button onClick={exportCurrentResultPDF} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs font-bold hover:bg-red-600 transition-all">
+                          <Printer className="w-3.5 h-3.5"/> PDF
+                        </button>
                         <button onClick={() => setResult('')} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all">
                           <Trash2 className="w-3.5 h-3.5"/>
                         </button>
@@ -484,16 +564,79 @@ export default function App() {
               </div>
             )}
 
+            {/* COMPILER */}
+            {activeTab === 'compiler' && (
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <BookCopy className="w-5 h-5 text-indigo-500"/>
+                    <div>
+                      <h3 className="font-black text-base">Compilador de TCC</h3>
+                      <p className="text-xs text-slate-400">Junta todos os textos gerados em um único documento PDF formatado em ABNT</p>
+                    </div>
+                  </div>
+                  {!activeProjectId ? (
+                    <p className="text-slate-400 text-sm">Seleciona um projeto primeiro</p>
+                  ) : projGen.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                      <BookCopy className="w-10 h-10 text-slate-300 mx-auto mb-3"/>
+                      <p className="text-slate-400 text-sm font-bold">Nenhum texto gerado ainda</p>
+                      <p className="text-slate-400 text-xs mt-1">Usa as ferramentas de IA para gerar o conteúdo do TCC primeiro</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {TOOLS.map(t => {
+                        const items = projGen.filter(g => g.toolId === t.id);
+                        if (!items.length) return null;
+                        return (
+                          <div key={t.id} className={`p-4 rounded-2xl border ${t.bg} border-current/10`}>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <span className={t.color}>{t.icon}</span>
+                                <span className={`font-bold text-sm ${t.color}`}>{t.name}</span>
+                                <span className="text-[10px] text-slate-400 font-medium">{items.length} {items.length===1?'texto':'textos'}</span>
+                              </div>
+                              <span className="text-[10px] text-slate-400">{items.reduce((a,i) => a + i.output.split(/\s+/).filter(Boolean).length, 0).toLocaleString('pt-BR')} palavras</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-bold text-slate-600 dark:text-slate-300">Total de palavras:</span>
+                          <span className="font-black text-violet-500 text-lg">{totalWords.toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="font-bold text-slate-600 dark:text-slate-300">Estimativa de páginas (ABNT):</span>
+                          <span className="font-black text-indigo-500 text-lg">{Math.round(totalWords / 250)}</span>
+                        </div>
+                        <button onClick={exportFullTCCPDF} className="w-full flex items-center justify-center gap-3 py-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl font-black text-base hover:from-red-600 hover:to-red-700 transition-all shadow-xl shadow-red-500/20 hover:scale-[1.01] mt-2">
+                          <Printer className="w-5 h-5"/> Gerar PDF Completo do TCC
+                        </button>
+                        <p className="text-[10px] text-slate-400 text-center">Abre um documento formatado em ABNT pronto para imprimir ou salvar como PDF</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* HISTORY */}
             {activeTab === 'history' && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
                   <h3 className="font-black text-lg">Histórico do Projeto</h3>
-                  <span className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-bold text-slate-500">{projGen.length} textos</span>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"/>
+                      <input value={historySearch} onChange={e => setHistorySearch(e.target.value)} placeholder="Buscar..." className="pl-8 pr-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white w-36"/>
+                    </div>
+                    <span className="text-xs bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-bold text-slate-500">{filteredGen.length}/{projGen.length}</span>
+                  </div>
                 </div>
                 {projGen.length === 0
                   ? <div className="text-center py-20 bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800"><History className="w-12 h-12 text-slate-200 dark:text-slate-800 mx-auto mb-3"/><p className="text-slate-400 text-sm font-bold">Histórico vazio. Gera o primeiro texto!</p></div>
-                  : projGen.map(item => {
+                  : filteredGen.map(item => {
                     const t = TOOLS.find(x => x.id === item.toolId);
                     const wc = item.output.split(/\s+/).filter(Boolean).length;
                     return (
