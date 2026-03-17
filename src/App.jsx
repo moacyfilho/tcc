@@ -993,8 +993,8 @@ export default function App() {
                 <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Layout className="w-4 h-4 text-indigo-500"/> Menu Principal</h4>
                 <div className="space-y-3">
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Dashboard (Início)</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Visão geral do teu projeto. Aqui consegues criar metas rápidas (TO-DOs) e acompanhar quantas partes do TCC já foram escritas.</p>
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Dashboard (Início) & RPG</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Visão geral do teu projeto. Ganhe <strong>XP e suba de Nível (RPG)</strong> ao completar Tarefas, marcar Capítulos como feitos e gerar palavras! Assista aos confetes em cada vitória.</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
                     <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">Notas do Projeto</p>
@@ -1008,50 +1008,50 @@ export default function App() {
               </section>
 
               <section>
-                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Sparkles className="w-4 h-4 text-indigo-500"/> Escrita Inteligente (IA)</h4>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Sparkles className="w-4 h-4 text-indigo-500"/> Escrita Inteligente & Ditado por Voz</h4>
                 <div className="space-y-3">
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">1. Escolhe a Ferramenta</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Tens 16 ferramentas à escolha. Queres criar o Resumo? Clica em "Resumo e Abstract". Precisas definir o tema? Vai a "Problema de Pesquisa".</p>
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">1. Tom e Extensão</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Antes de gerar, escolha se prefere um texto <strong>Formal, Dinâmico, Detalhado ou Conciso</strong>. A IA adapta o vocabulário e o limite de palavras.</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">2. Ajusta o Tom e Extensão</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Antes de dar Enter, usa os comandos rápidos: "Formal" fica estilo ABNT clássico, "Conciso" resume a ideia. E escolhe também o número de palavras alvo.</p>
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">2. Ditado por Voz (Microfone)</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Cansado de digitar? Ao lado do botão de gerar, há um ícone de <strong>Microfone</strong>. Clique, fale sua ideia de forma bruta falada, e ela vai pra caixa de texto. A IA transformará a sua voz em ABNT perfeito.</p>
                   </div>
                   <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">3. Chat de Follow-Up (Edição Contínua)</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-400">Se o trecho ficou quase perfeito, não o apagues! Desce um pouco a tela e usa o Chat para instruir a IA: <em>"Substitui a palavra X, tira a segunda frase, aplica a citação do autor Silva"</em>. Ela lembra-se de tudo!</p>
+                    <p className="font-bold text-sm text-indigo-600 dark:text-indigo-400 mb-1">3. Chat de Follow-Up</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">Se o trecho ficou quase perfeito, desça a tela e use o Chat para instruir: <em>"Substitua a palavra X", "Reescreva mais formal"</em>.</p>
                   </div>
                 </div>
               </section>
 
               <section>
-                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><PenTool className="w-4 h-4 text-indigo-500"/> Ferramentas Destacadas</h4>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><PenTool className="w-4 h-4 text-indigo-500"/> As 16 Ferramentas de TCC</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Paráfrase Anti-Plágio</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Reescreve textos de outras fontes com novas palavras, mantendo o sentido.</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Gerador de Referências</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Converte nomes de livros ou links no formato rígido da ABNT.</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Análise de Artigo</p>
-                    <p className="text-[10px] text-slate-500 mt-1">Cola um PDF imenso e a IA extrai-te a metodologia, teoria e considerações.</p>
-                  </div>
-                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl">
-                    <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Criar Questionário</p>
-                    <p className="text-[10px] text-slate-500 mt-1">A IA faz um roteiro completo de perguntas prontas para enviar pro Google Forms.</p>
-                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Pesquisa Geral</p><p className="text-[10px] text-slate-500 mt-1">Busque autores, citações ou teorias em formato ABNT.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Problema de Pesquisa</p><p className="text-[10px] text-slate-500 mt-1">Ajuda a definir e lapidar qual é o problema central da sua tese.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Hipótese e Objetivos</p><p className="text-[10px] text-slate-500 mt-1">Escreve o Objetivo Geral e Específicos do seu projeto.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Escrever Introdução</p><p className="text-[10px] text-slate-500 mt-1">Estrutura o início do TCC apresentando o tema e a relevância.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Estruturar Capítulo</p><p className="text-[10px] text-slate-500 mt-1">Cria o desenvolvimento de um capítulo com referências.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Escrever Conclusão</p><p className="text-[10px] text-slate-500 mt-1">Sintetiza os resultados da pesquisa fechando o trabalho.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Paráfrase Anti-Plágio</p><p className="text-[10px] text-slate-500 mt-1">Reescreve passagens externas sem perder o sentido original.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Revisar Gramática</p><p className="text-[10px] text-slate-500 mt-1">Corrige erros ortográficos, concordância e repetições.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Análise de Artigo</p><p className="text-[10px] text-slate-500 mt-1">Cole um texto longo e ela extrai os pontos e metodologia dele.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Criar Questionário</p><p className="text-[10px] text-slate-500 mt-1">Gera perguntas prontas (múltipla escolha/abertas) pro Forms/Entrevista.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Cronograma TCC</p><p className="text-[10px] text-slate-500 mt-1">Faz um passo a passo do que fazer em cada mês de projeto.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Resumo e Abstract</p><p className="text-[10px] text-slate-500 mt-1">Escreve o Resumo ABNT de até 500 palavras e traduz pro inglês.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Sugerir Bibliografia</p><p className="text-[10px] text-slate-500 mt-1">Mostra quais livros e autores mais famosos a consultar na sua área.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Formatar Referências</p><p className="text-[10px] text-slate-500 mt-1">Transforma um link solto ou nome de livro no Padrão ABNT 6023.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Citação Direta (Curta/Longa)</p><p className="text-[10px] text-slate-500 mt-1">Ensina como usar a regra das aspas ou recuo de 4cm no texto.</p></div>
+                  <div className="bg-slate-50 dark:bg-slate-800 p-4 rounded-xl"><p className="font-bold text-xs text-slate-800 dark:text-slate-200">Citação Indireta</p><p className="text-[10px] text-slate-500 mt-1">Explica como incluir o (AUTOR, ANO) quando usa as suas próprias palavras.</p></div>
                 </div>
               </section>
 
               <section>
-                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Timer className="w-4 h-4 text-indigo-500"/> Pomodoro & Foco Absoluto</h4>
+                <h4 className="font-black text-sm text-slate-800 dark:text-white mb-3 flex items-center gap-2 uppercase tracking-wide"><Timer className="w-4 h-4 text-indigo-500"/> Pomodoro & Modo Zen (Foco)</h4>
                 <p className="text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl leading-relaxed">
-                  Na barra lateral inferior, há um pequeno cronómetro. A Técnica Pomodoro serve para combater a temida <em>"ansiedade do TCC"</em>. 
-                  Como se usa? Dá <strong>Play</strong>, e escreve 100% focado sem ver WhatsApp ou Instagram, até o tempo chegar a zero. Depois disso, pausa e vai beber um café.
+                  No canto inferior esquerdo, há um cronómetro Pomodoro (25min de foco / 5min de pausa). <br/>
+                  <strong>🚀 Super Dica (Modo Zen):</strong> Ao lado do botão Play, existe o ícone da <strong>Tesoura</strong>. Ao clicar nele, você remove todas as distrações da tela (barra lateral, topo). Foque 100% apenas em ler os resultados do robô e compilar o seu texto!
                 </p>
               </section>
 
