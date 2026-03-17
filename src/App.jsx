@@ -145,6 +145,9 @@ export default function App() {
   const projTasks = useMemo(() => tasks.filter(t => t.pid === activeProjectId).sort((a,b) => (a.order||0)-(b.order||0)), [tasks, activeProjectId]);
   const completedTasks = projTasks.filter(t => t.done).length;
   const projNote = notes[activeProjectId] || '';
+  const totalWords = useMemo(() => projGen.reduce((acc, g) => acc + (g.output || '').split(/\s+/).filter(Boolean).length, 0), [projGen]);
+  const isChapterDone = (ch) => chapterStatus[`${activeProjectId}-${ch}`];
+  const completedChapters = CHAPTERS.filter(ch => isChapterDone(ch)).length;
 
   // PDF export: abre janela de impressão com conteúdo formatado
   const exportPDF = useCallback((content, title) => {
@@ -290,8 +293,6 @@ export default function App() {
     setSavedAt(new Date());
   };
 
-  const isChapterDone = (ch) => chapterStatus[`${activeProjectId}-${ch}`];
-  const completedChapters = CHAPTERS.filter(ch => isChapterDone(ch)).length;
 
   const copyText = () => {
     navigator.clipboard.writeText(result).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
