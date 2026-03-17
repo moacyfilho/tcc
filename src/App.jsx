@@ -14,6 +14,16 @@ import {
   collection, doc, setDoc, deleteDoc, onSnapshot,
   query, orderBy, serverTimestamp, getDoc
 } from 'firebase/firestore';
+import confetti from 'canvas-confetti';
+
+const MOTIVATION = [
+  "Um passo de cada vez. O Vasco da Gama não foi fundado num dia!",
+  "A consistência ganha da ansiedade. Foca em 25 minutos.",
+  "Estás mais perto do que ontem. Bora!",
+  "A pior parte é sempre começar. Confia e escreve o primeiro parágrafo.",
+  "Esse diploma já tem o teu nome. Não desistas agora!",
+  "Respira fundo e deixa a IA guiar-te."
+];
 
 // --- CONFIG ---
 const API_KEY = "AIzaSyDL4KUxvFd8eueVQG2N-qpXoaTLjxSItqs";
@@ -103,6 +113,7 @@ export default function App() {
 
   const [timer, setTimer] = useState(25 * 60);
   const [timerActive, setTimerActive] = useState(false);
+  const [zenMode, setZenMode] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [historySearch, setHistorySearch] = useState('');
   const [savedAt, setSavedAt] = useState(null);
@@ -364,11 +375,21 @@ export default function App() {
 
   const toggleChapter = async (ch) => {
     const key = `${activeProjectId}-${ch}`;
-    const updated = { ...chapterStatus, [key]: !chapterStatus[key] };
+    const isNowDone = !chapterStatus[key];
+    const updated = { ...chapterStatus, [key]: isNowDone };
     setChapterStatus(updated);
     await setDoc(doc(db, 'users', USER_ID, 'config', 'main'),
       { chapterStatus: updated, notes }, { merge: true });
     setSavedAt(new Date());
+
+    if (isNowDone) {
+      confetti({
+        particleCount: 150,
+        spread: 90,
+        origin: { y: 0.6 },
+        colors: ['#4ade80', '#3b82f6', '#facc15']
+      });
+    }
   };
   const updateNote = async (val) => {
     const updated = { ...notes, [activeProjectId]: val };
@@ -452,9 +473,14 @@ export default function App() {
             </div>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-black font-mono text-slate-800 dark:text-white">{Math.floor(timer/60)}:{String(timer%60).padStart(2,'0')}</span>
-              <button onClick={() => setTimerActive(!timerActive)} className={`p-2 rounded-xl text-white text-xs ${timerActive ? 'bg-red-500' : 'bg-orange-500'}`}>
-                {timerActive ? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}
-              </button>
+              <div className="flex items-center gap-1">
+                <button title="Modo Foco Zen" onClick={() => setZenMode(!zenMode)} className={`p-2 rounded-xl text-xs transition-all ${zenMode ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                  <Scissors className="w-4 h-4" />
+                </button>
+                <button onClick={() => setTimerActive(!timerActive)} className={`p-2 rounded-xl text-white text-xs ${timerActive ? 'bg-red-500' : 'bg-orange-500'}`}>
+                  {timerActive ? <Pause className="w-4 h-4"/> : <Play className="w-4 h-4"/>}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -473,10 +499,10 @@ export default function App() {
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 flex flex-col min-w-0">
+      <main className={`flex-1 flex flex-col min-w-0 transition-opacity duration-500 ${zenMode ? 'zen-blur-bg' : ''}`}>
 
         {/* Header */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex items-center px-6 gap-4 sticky top-0 z-30">
+        <header className={`h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl flex items-center px-6 gap-4 sticky top-0 z-30 transition-all ${zenMode ? 'opacity-20 hover:opacity-100' : ''}`}>
           <button onClick={() => setSidebarOpen(s => !s)} className="lg:flex hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
             <Layout className="w-4 h-4"/>
           </button>
@@ -526,9 +552,12 @@ export default function App() {
                   <div className="relative z-10">
                     <div className="inline-block bg-white/20 text-xs font-black uppercase px-3 py-1 rounded-full mb-4 backdrop-blur-md">IA Académica Ativa</div>
                     <h3 className="text-4xl font-black tracking-tight mb-3">TCC Sem Stress,<br/>Com Qualidade.</h3>
-                    <p className="text-indigo-100 max-w-sm mb-6 text-sm leading-relaxed">Escreva, revise e organize o seu Trabalho de Conclusão com a ajuda da Inteligência Artificial mais avançada do Google.</p>
+                    <p className="text-indigo-100 max-w-sm mb-6 text-sm leading-relaxed flex flex-col gap-2">
+                      <span>Escreva, revise e organize o seu Trabalho com Inteligência Artificial avançada.</span>
+                      <span className="text-yellow-300 font-bold flex items-center gap-1"><Sparkles className="w-3 h-3"/> {MOTIVATION[Math.floor(Math.random() * MOTIVATION.length)]}</span>
+                    </p>
                     <div className="flex gap-3 flex-wrap">
-                      <button onClick={() => setActiveTab('writer')} className="bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-black text-sm hover:scale-105 transition-all shadow-xl">Começar a Escrever</button>
+                      <button onClick={() => { setActiveTab(TOOLS[0].id); setTool(TOOLS[0]); }} className="bg-white text-indigo-700 px-5 py-2.5 rounded-xl font-black text-sm hover:scale-105 transition-all shadow-xl">Começar a Escrever</button>
                       <button onClick={() => setActiveTab('brainstorm')} className="bg-white/20 text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white/30 transition-all">Explorar Temas</button>
                       {!activeProjectId && <button onClick={createProject} className="bg-white/20 text-white border border-white/30 px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-white/30 transition-all">+ Novo Projeto</button>}
                     </div>
@@ -546,8 +575,10 @@ export default function App() {
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {projTasks.map(t => (
                         <button key={t.id} onClick={async () => {
-                            await setDoc(doc(db, 'users', USER_ID, 'tasks', t.id), { ...t, done: !t.done });
+                            const isNowDone = !t.done;
+                            await setDoc(doc(db, 'users', USER_ID, 'tasks', t.id), { ...t, done: isNowDone });
                             setSavedAt(new Date());
+                            if (isNowDone) confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 }, colors: ['#22c55e'] });
                           }}
                           className="flex items-center gap-2 w-full text-left p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-all group">
                           {t.done ? <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0"/> : <Circle className="w-5 h-5 text-slate-300 flex-shrink-0"/>}
