@@ -7,7 +7,8 @@ import {
   MessageCircleWarning, ArrowUpRight, FileJson, Pause, Play,
   StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save,
   Send, RotateCcw, Sliders, Languages, Calendar, HelpCircle, Scissors,
-  FlaskConical, ClipboardList, MessageSquare, ChevronRight
+  FlaskConical, ClipboardList, MessageSquare, ChevronRight,
+  Mic, MicOff, Trophy
 } from 'lucide-react';
 import { db } from './firebase';
 import {
@@ -109,6 +110,8 @@ export default function App() {
   const [followUpInput, setFollowUpInput] = useState('');
   const [followUpLoading, setFollowUpLoading] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
   const resultRef = useRef(null);
 
   const [timer, setTimer] = useState(25 * 60);
@@ -118,6 +121,48 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
   const [savedAt, setSavedAt] = useState(null);
   const wordCount = useMemo(() => result ? result.split(/\s+/).filter(Boolean).length : 0, [result]);
+
+  // RPG System
+  const rpg = useMemo(() => {
+    let xp = (generations.length * 50) + (tasks.filter(t=>t.done).length * 100) + (Object.values(chapterStatus).filter(Boolean).length * 500) + Math.floor(totalWords / 5);
+    const titulos = ["Calouro TCC", "Explorador de Dados", "Pesquisador Focado", "Revisor ABNT", "Mestre da Bibliografia", "Escritor Incansável", "Especialista ABNT", "Doutor da Madrugada", "Lenda Acadêmica", "Patrono do Vasco"];
+    const level = Math.floor(xp / 1000) + 1;
+    const title = titulos[Math.min(level - 1, titulos.length - 1)];
+    const progress = (xp % 1000) / 10;
+    return { level, title, xp, progress };
+  }, [generations, tasks, chapterStatus, totalWords]);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      if(recognitionRef.current) recognitionRef.current.stop();
+      setIsRecording(false);
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Seu navegador não suporta gravação de voz. Tente usar o Google Chrome!");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.continuous = true;
+
+    recognition.onresult = (event) => {
+      let finalTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalTranscript += transcript + ' ';
+      }
+      if(finalTranscript) setInput(prev => prev + (prev.endsWith(' ') ? '' : ' ') + finalTranscript);
+    };
+    recognition.onerror = () => setIsRecording(false);
+    recognition.onend = () => setIsRecording(false);
+    
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
 
   // --- FIRESTORE: Listeners em Tempo Real ---
   useEffect(() => {
@@ -428,7 +473,13 @@ export default function App() {
             <img src="https://logodetimes.com/times/vasco-da-gama/logo-vasco-da-gama-256.png" alt="Vasco da Gama" className="w-10 h-10 object-contain drop-shadow-md hover:scale-105 transition-transform" />
             <div className="flex flex-col">
               <h1 className="font-black text-lg tracking-tight leading-none text-slate-800 dark:text-white">TCC <span className="text-indigo-500">Master</span></h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide mt-1">Marcio de Souza</p>
+              <div className="mt-1 flex flex-col items-start gap-1">
+                <p className="text-xs text-slate-500 font-medium tracking-wide">Marcio de Souza</p>
+                <div title={`XP: ${rpg.xp}`} className="flex items-center gap-1.5 bg-gradient-to-r from-amber-100 to-amber-50 dark:from-amber-900/40 dark:to-orange-900/20 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-200 dark:border-amber-900/50 shadow-sm cursor-help hover:scale-105 transition-all w-max">
+                  <Trophy className="w-3 h-3 text-amber-500"/>
+                  <span className="text-[9px] font-black tracking-widest uppercase">Nvl {rpg.level} · {rpg.title}</span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -720,13 +771,22 @@ export default function App() {
                       className="w-full min-h-36 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-y text-sm leading-relaxed dark:text-white"
                     />
                     {error && <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-xs text-red-600 dark:text-red-400 font-medium">{error}</div>}
-                    <button
-                      disabled={loading || !input.trim()}
-                      onClick={callAI}
-                      className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white py-3.5 rounded-xl font-black flex items-center justify-center gap-3 transition-all shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
-                    >
-                      {loading ? <><Loader2 className="w-5 h-5 animate-spin"/> Gerando texto científico...</> : <><Sparkles className="w-5 h-5"/> Gerar com IA · Ctrl+Enter</>}
-                    </button>
+                    <div className="flex gap-2 relative z-10">
+                      <button
+                        onClick={toggleRecording}
+                        className={`p-3.5 rounded-xl transition-all shadow-md flex items-center justify-center ${isRecording ? 'bg-red-500 text-white animate-pulse shadow-red-500/30' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                        title="Ditar ideia (Voz para Texto)"
+                      >
+                        {isRecording ? <MicOff className="w-5 h-5"/> : <Mic className="w-5 h-5"/>}
+                      </button>
+                      <button
+                        disabled={loading || (!input.trim() && !isRecording)}
+                        onClick={callAI}
+                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 disabled:text-slate-400 text-white py-3.5 rounded-xl font-black flex items-center justify-center gap-3 transition-all shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:scale-[1.01] active:scale-[0.99]"
+                      >
+                        {loading ? <><Loader2 className="w-5 h-5 animate-spin"/> Mágica a acontecer...</> : <><Sparkles className="w-5 h-5"/> {isRecording ? 'Escutando... Clica para Parar e Gerar' : 'Gerar com IA Académica'}</>}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
