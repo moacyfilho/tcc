@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sparkles, BookOpen, Layout, PenTool, Quote, Send, Loader2,
   Copy, Check, Home, FileText, History, Trash2, Download,
@@ -192,8 +192,8 @@ export default function App() {
               <Sparkles className="w-5 h-5 text-white"/>
             </div>
             <div>
-              <h1 className="font-black text-base leading-none">TCC <span className="text-indigo-500">Master</span></h1>
-              <p className="text-[10px] text-slate-400 font-medium uppercase tracking-widest">Pro Lab</p>
+              <h1 className="font-black text-sm leading-none">TCC <span className="text-indigo-500">Master</span></h1>
+              <p className="text-[10px] text-slate-400 font-medium tracking-wide leading-tight mt-0.5">Marcio de Souza</p>
             </div>
           </div>
 
