@@ -669,11 +669,22 @@ export default function App() {
           <button onClick={() => setSidebarOpen(s => !s)} className="lg:flex hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
             <Layout className="w-4 h-4"/>
           </button>
-          <div>
+          <div className="min-w-0 flex-1 lg:flex-none">
             <h2 className="font-black text-base leading-none">
               {activeTab === 'home' ? 'Dashboard' : activeTab === 'history' ? 'Histórico' : activeTab === 'progress' ? 'Progresso TCC' : activeTab === 'notes' ? 'Meu TCC (Editor)' : tool?.name}
             </h2>
-            <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">{project?.title || 'Sem Projeto'}</p>
+            {/* Mobile: seletor de projeto */}
+            <div className="lg:hidden mt-0.5">
+              {projects.length > 1 ? (
+                <select value={activeProjectId || ''} onChange={e => setActiveProjectId(e.target.value)}
+                  className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider bg-transparent border-none outline-none cursor-pointer max-w-[160px]">
+                  {projects.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              ) : (
+                <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider truncate">{project?.title || 'Sem Projeto'}</p>
+              )}
+            </div>
+            <p className="hidden lg:block text-[10px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">{project?.title || 'Sem Projeto'}</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <button onClick={() => setDarkMode(!darkMode)} className="lg:hidden p-2 rounded-xl text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
