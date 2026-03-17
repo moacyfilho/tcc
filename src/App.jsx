@@ -8,7 +8,7 @@ import {
   StickyNote, AlignLeft, RefreshCw, Search, Printer, BookCopy, Save,
   Send, RotateCcw, Sliders, Languages, Calendar, HelpCircle, Scissors,
   FlaskConical, ClipboardList, MessageSquare, ChevronRight,
-  Mic, MicOff, Trophy
+  Mic, MicOff, Trophy, BookText
 } from 'lucide-react';
 import { db } from './firebase';
 import {
@@ -121,6 +121,9 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
   const [savedAt, setSavedAt] = useState(null);
   const wordCount = useMemo(() => result ? result.split(/\s+/).filter(Boolean).length : 0, [result]);
+  const [activeChapter, setActiveChapter] = useState('Introdução');
+  const [chapterNotes, setChapterNotes] = useState({});
+  const [showInsertMenu, setShowInsertMenu] = useState(false);
 
 
   const toggleRecording = () => {
@@ -187,6 +190,7 @@ export default function App() {
           const data = snap.data();
           if (data.notes) setNotes(data.notes);
           if (data.chapterStatus) setChapterStatus(data.chapterStatus);
+          if (data.chapterNotes) setChapterNotes(data.chapterNotes);
         }
       }
     );
@@ -446,6 +450,30 @@ export default function App() {
   };
 
 
+  const updateChapterNote = async (chapter, val) => {
+    const key = `${activeProjectId}-${chapter}`;
+    const updated = { ...chapterNotes, [key]: val };
+    setChapterNotes(updated);
+    await setDoc(doc(db, 'users', USER_ID, 'config', 'main'),
+      { chapterNotes: updated, notes, chapterStatus }, { merge: true });
+    setSavedAt(new Date());
+  };
+
+  const insertResultToChapter = async (chapter) => {
+    if (!result || !activeProjectId) return;
+    const key = `${activeProjectId}-${chapter}`;
+    const existing = chapterNotes[key] || '';
+    const separator = existing ? '\n\n' : '';
+    const updated = { ...chapterNotes, [key]: existing + separator + result };
+    setChapterNotes(updated);
+    await setDoc(doc(db, 'users', USER_ID, 'config', 'main'),
+      { chapterNotes: updated, notes, chapterStatus }, { merge: true });
+    setSavedAt(new Date());
+    setShowInsertMenu(false);
+    setActiveTab('notes');
+    setActiveChapter(chapter);
+  };
+
   const copyText = () => {
     navigator.clipboard.writeText(result).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
   };
@@ -509,7 +537,7 @@ export default function App() {
             <SBtn id="home" icon={<Home className="w-4 h-4"/>} label="Dashboard"/>
             <SBtn id="progress" icon={<BarChart3 className="w-4 h-4"/>} label="Progresso do TCC"/>
             <SBtn id="compiler" icon={<BookCopy className="w-4 h-4"/>} label="Compilar TCC Completo"/>
-            <SBtn id="notes" icon={<StickyNote className="w-4 h-4"/>} label="Notas do Projeto"/>
+            <SBtn id="notes" icon={<BookText className="w-4 h-4"/>} label="Meu TCC (Editor)"/>
             <div className="h-px bg-slate-100 dark:bg-slate-800 my-2"/>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-1">Ferramentas IA</p>
             {TOOLS.map(t => <SBtn key={t.id} id={t.id} icon={t.icon} label={t.name} color={t.color}/>)}
@@ -560,7 +588,7 @@ export default function App() {
           </button>
           <div>
             <h2 className="font-black text-base leading-none">
-              {activeTab === 'home' ? 'Dashboard' : activeTab === 'history' ? 'Histórico' : activeTab === 'progress' ? 'Progresso TCC' : activeTab === 'notes' ? 'Notas' : tool?.name}
+              {activeTab === 'home' ? 'Dashboard' : activeTab === 'history' ? 'Histórico' : activeTab === 'progress' ? 'Progresso TCC' : activeTab === 'notes' ? 'Meu TCC (Editor)' : tool?.name}
             </h2>
             <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-wider mt-0.5">{project?.title || 'Sem Projeto'}</p>
           </div>
@@ -718,22 +746,84 @@ export default function App() {
               </div>
             )}
 
-            {/* NOTES */}
+            {/* EDITOR POR CAPÍTULO */}
             {activeTab === 'notes' && (
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <StickyNote className="w-5 h-5 text-amber-500"/>
-                  <h3 className="font-black text-base">Notas – {project?.title || 'Projeto'}</h3>
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5">
+                  <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+                    <h3 className="font-black text-base flex items-center gap-2">
+                      <BookText className="w-4 h-4 text-indigo-500"/> Meu TCC — {project?.title || 'Novo Projeto'}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          const allHtml = CHAPTERS.map(ch => {
+                            const txt = chapterNotes[`${activeProjectId}-${ch}`] || '';
+                            if (!txt) return '';
+                            return `<h1>${ch}</h1><p>${txt.replace(/\n\n/g,'</p><p>').replace(/\n/g,'<br/>')}</p>`;
+                          }).filter(Boolean).join('<p style="page-break-after:always;"></p>');
+                          exportPDF(allHtml, project?.title || 'TCC');
+                        }}
+                        className="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-red-600 transition-all flex items-center gap-1.5">
+                        <Printer className="w-3 h-3"/> PDF Completo
+                      </button>
+                      <button
+                        onClick={() => {
+                          const txt = chapterNotes[`${activeProjectId}-${activeChapter}`] || '';
+                          navigator.clipboard.writeText(txt);
+                        }}
+                        className="bg-slate-100 dark:bg-slate-800 text-slate-500 px-3 py-1.5 rounded-lg text-[10px] font-black hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">
+                        Copiar Capítulo
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Abas dos capítulos */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {CHAPTERS.map(ch => {
+                      const wc = (chapterNotes[`${activeProjectId}-${ch}`] || '').split(/\s+/).filter(Boolean).length;
+                      return (
+                        <button key={ch} onClick={() => setActiveChapter(ch)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${activeChapter === ch ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}>
+                          {isChapterDone(ch) ? <CheckCircle2 className="w-3 h-3 text-green-400 flex-shrink-0"/> : null}
+                          {ch}
+                          {wc > 0 && <span className={`text-[9px] font-medium ${activeChapter === ch ? 'opacity-70' : 'text-indigo-400'}`}>{wc}p</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {!activeProjectId ? (
+                    <p className="text-slate-400 text-sm py-8 text-center">Seleciona um projeto para começar</p>
+                  ) : (
+                    <div className="bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200 dark:border-slate-800">
+                        <h4 className="font-black text-sm text-indigo-600 dark:text-indigo-400">{activeChapter}</h4>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          {(chapterNotes[`${activeProjectId}-${activeChapter}`] || '').split(/\s+/).filter(Boolean).length} palavras
+                        </span>
+                      </div>
+                      <div className="p-6 lg:p-10">
+                        <textarea
+                          value={chapterNotes[`${activeProjectId}-${activeChapter}`] || ''}
+                          onChange={e => updateChapterNote(activeChapter, e.target.value)}
+                          placeholder={`Escreve ou cola aqui o conteúdo de "${activeChapter}"...\n\nDica: Gera um texto com a IA e clica em "Inserir no Meu TCC" para colar aqui automaticamente.`}
+                          className="w-full min-h-[500px] bg-transparent resize-none focus:outline-none text-slate-800 dark:text-slate-200 font-serif leading-loose text-base text-justify"
+                          style={{ textIndent: '1.25cm' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {activeProjectId && (
+                    <div className="mt-3 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Total no editor: <strong className="text-indigo-500">
+                        {CHAPTERS.reduce((acc, ch) => acc + (chapterNotes[`${activeProjectId}-${ch}`] || '').split(/\s+/).filter(Boolean).length, 0).toLocaleString('pt-BR')} palavras
+                      </strong></span>
+                      <span className="italic">Salvo automaticamente na nuvem</span>
+                    </div>
+                  )}
                 </div>
-                {!activeProjectId
-                  ? <p className="text-slate-400 text-sm">Seleciona um projeto para ver as notas</p>
-                  : <textarea
-                      value={projNote}
-                      onChange={e => updateNote(e.target.value)}
-                      placeholder="Escreve aqui observações do orientador, citações importantes, ideias rápidas..."
-                      className="w-full h-96 p-4 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-300 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
-                    />
-                }
               </div>
             )}
 
@@ -799,11 +889,28 @@ export default function App() {
                         <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"/>
                         <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Resultado · {wordCount} palavras</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <button onClick={copyText} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold hover:bg-slate-200 transition-all">
                           {copied ? <Check className="w-3.5 h-3.5 text-green-500"/> : <Copy className="w-3.5 h-3.5"/>}
                           {copied ? 'Copiado!' : 'Copiar'}
                         </button>
+                        <div className="relative">
+                          <button onClick={() => setShowInsertMenu(s => !s)} className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-bold hover:bg-green-700 transition-all">
+                            <BookText className="w-3.5 h-3.5"/> Inserir no Meu TCC
+                          </button>
+                          {showInsertMenu && (
+                            <div className="absolute right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden w-52">
+                              <p className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">Inserir em qual capítulo?</p>
+                              {CHAPTERS.map(ch => (
+                                <button key={ch} onClick={() => insertResultToChapter(ch)}
+                                  className="w-full px-4 py-2.5 text-left text-xs font-medium hover:bg-green-50 dark:hover:bg-green-900/20 text-slate-700 dark:text-slate-300 hover:text-green-700 transition-all border-b border-slate-100 dark:border-slate-800 last:border-0 flex items-center gap-2">
+                                  {isChapterDone(ch) ? <CheckCircle2 className="w-3 h-3 text-green-500 flex-shrink-0"/> : <Circle className="w-3 h-3 text-slate-300 flex-shrink-0"/>}
+                                  {ch}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                         <button onClick={exportMd} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition-all">
                           <FileJson className="w-3.5 h-3.5"/> .MD
                         </button>
