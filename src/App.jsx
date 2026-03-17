@@ -122,15 +122,6 @@ export default function App() {
   const [savedAt, setSavedAt] = useState(null);
   const wordCount = useMemo(() => result ? result.split(/\s+/).filter(Boolean).length : 0, [result]);
 
-  // RPG System
-  const rpg = useMemo(() => {
-    let xp = (generations.length * 50) + (tasks.filter(t=>t.done).length * 100) + (Object.values(chapterStatus).filter(Boolean).length * 500) + Math.floor(totalWords / 5);
-    const titulos = ["Calouro TCC", "Explorador de Dados", "Pesquisador Focado", "Revisor ABNT", "Mestre da Bibliografia", "Escritor Incansável", "Especialista ABNT", "Doutor da Madrugada", "Lenda Acadêmica", "Patrono do Vasco"];
-    const level = Math.floor(xp / 1000) + 1;
-    const title = titulos[Math.min(level - 1, titulos.length - 1)];
-    const progress = (xp % 1000) / 10;
-    return { level, title, xp, progress };
-  }, [generations, tasks, chapterStatus, totalWords]);
 
   const toggleRecording = () => {
     if (isRecording) {
@@ -233,6 +224,16 @@ export default function App() {
   const totalWords = useMemo(() => projGen.reduce((acc, g) => acc + (g.output || '').split(/\s+/).filter(Boolean).length, 0), [projGen]);
   const isChapterDone = (ch) => chapterStatus[`${activeProjectId}-${ch}`];
   const completedChapters = CHAPTERS.filter(ch => isChapterDone(ch)).length;
+
+  // RPG System
+  const rpg = useMemo(() => {
+    let xp = (generations.length * 50) + (tasks.filter(t=>t.done).length * 100) + (Object.values(chapterStatus).filter(Boolean).length * 500) + Math.floor(totalWords / 5);
+    const titulos = ["Calouro TCC", "Explorador de Dados", "Pesquisador Focado", "Revisor ABNT", "Mestre da Bibliografia", "Escritor Incansável", "Especialista ABNT", "Doutor da Madrugada", "Lenda Acadêmica", "Patrono do Vasco"];
+    const level = Math.floor(xp / 1000) + 1;
+    const title = titulos[Math.min(level - 1, titulos.length - 1)];
+    const progress = (xp % 1000) / 10;
+    return { level, title, xp, progress };
+  }, [generations, tasks, chapterStatus, totalWords]);
 
   // PDF export: abre janela de impressão com conteúdo formatado
   const exportPDF = useCallback((content, title) => {
