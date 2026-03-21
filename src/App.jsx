@@ -1092,22 +1092,9 @@ export default function App() {
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                   <div className={`px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 ${tool.bg}`}>
                     <div className={`${tool.color}`}>{tool.icon}</div>
-                    <div className="flex-1 min-w-0">
+                    <div>
                       <h3 className="font-black text-base text-slate-800 dark:text-white">{tool.name}</h3>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">
-                        Motor {aiProvider === 'minimax' ? 'MiniMax Text-01' : 'Gemini 2.5'} · ABNT
-                      </p>
-                    </div>
-                    {/* Seletor de motor IA */}
-                    <div className="ml-auto flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                      <button onClick={() => { setAiProvider('gemini'); savePref('tcc-ai-provider', 'gemini'); }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${aiProvider === 'gemini' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                        Gemini
-                      </button>
-                      <button onClick={() => { setAiProvider('minimax'); savePref('tcc-ai-provider', 'minimax'); }}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${aiProvider === 'minimax' ? 'bg-white dark:bg-slate-700 text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                        MiniMax
-                      </button>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Motor Gemini 2.5 · ABNT</p>
                     </div>
                   </div>
                   <div className="p-6 space-y-4">
