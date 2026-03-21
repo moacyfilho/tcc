@@ -28,9 +28,12 @@ const MOTIVATION = [
 ];
 
 // --- CONFIG ---
-const API_KEY = import.meta.env.VITE_GEMINI_KEY;
-const MODEL = "gemini-2.5-flash";
-const STREAM_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:streamGenerateContent?key=${API_KEY}&alt=sse`;
+const GEMINI_KEY = import.meta.env.VITE_GEMINI_KEY;
+const MINIMAX_KEY = import.meta.env.VITE_MINIMAX_KEY;
+const GEMINI_MODEL = "gemini-2.5-flash";
+const MINIMAX_MODEL = "MiniMax-Text-01";
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${GEMINI_KEY}&alt=sse`;
+const MINIMAX_URL = `https://api.minimaxi.chat/v1/chat/completions`;
 
 // LocalStorage apenas para preferências de UI
 const loadPref = (key, def) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; } };
@@ -143,6 +146,7 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState(null);
   const [editorSearch, setEditorSearch] = useState('');
   const [showEditorSearch, setShowEditorSearch] = useState(false);
+  const [aiProvider, setAiProvider] = useState(() => loadPref('tcc-ai-provider', 'gemini'));
   const insertMenuRef = useRef(null);
 
 
@@ -359,14 +363,12 @@ export default function App() {
   };
 
   // --- STREAMING AI CALL ---
-  const streamAI = async (messages, onChunk) => {
-    const res = await fetch(STREAM_URL, {
+  const streamGemini = async (messages, onChunk) => {
+    const temp = tone === 'concise' ? 0.4 : tone === 'detailed' ? 0.9 : 0.7;
+    const res = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: messages,
-        generationConfig: { temperature: tone === 'concise' ? 0.4 : tone === 'detailed' ? 0.9 : 0.7, maxOutputTokens: 8192 }
-      })
+      body: JSON.stringify({ contents: messages, generationConfig: { temperature: temp, maxOutputTokens: 8192 } })
     });
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
     const reader = res.body.getReader();
@@ -375,8 +377,7 @@ export default function App() {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-      const lines = decoder.decode(value).split('\n');
-      for (const line of lines) {
+      for (const line of decoder.decode(value).split('\n')) {
         if (!line.startsWith('data: ')) continue;
         try {
           const json = JSON.parse(line.slice(6));
@@ -387,6 +388,42 @@ export default function App() {
     }
     return full;
   };
+
+  const streamMiniMax = async (messages, onChunk) => {
+    // Converte formato Gemini {role, parts:[{text}]} → OpenAI {role, content}
+    const oaiMessages = messages.map(m => ({
+      role: m.role === 'model' ? 'assistant' : m.role,
+      content: m.parts?.[0]?.text ?? m.content ?? ''
+    }));
+    const temp = tone === 'concise' ? 0.4 : tone === 'detailed' ? 0.9 : 0.7;
+    const res = await fetch(MINIMAX_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MINIMAX_KEY}` },
+      body: JSON.stringify({ model: MINIMAX_MODEL, messages: oaiMessages, temperature: temp, max_tokens: 8192, stream: true })
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || e?.base_resp?.status_msg || `HTTP ${res.status}`); }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of decoder.decode(value).split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const raw = line.slice(6).trim();
+        if (raw === '[DONE]') continue;
+        try {
+          const json = JSON.parse(raw);
+          const chunk = json.choices?.[0]?.delta?.content || '';
+          if (chunk) { full += chunk; onChunk(full); }
+        } catch {}
+      }
+    }
+    return full;
+  };
+
+  const streamAI = (messages, onChunk) =>
+    aiProvider === 'minimax' ? streamMiniMax(messages, onChunk) : streamGemini(messages, onChunk);
 
   const buildSys = () => {
     const toneMap = { formal: 'tom formal e académico', technical: 'tom técnico e preciso', detailed: 'tom detalhado e extenso', concise: 'tom conciso e direto' };
@@ -1055,9 +1092,22 @@ export default function App() {
                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
                   <div className={`px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3 ${tool.bg}`}>
                     <div className={`${tool.color}`}>{tool.icon}</div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-black text-base text-slate-800 dark:text-white">{tool.name}</h3>
-                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">Motor Gemini 2.5 · ABNT</p>
+                      <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">
+                        Motor {aiProvider === 'minimax' ? 'MiniMax Text-01' : 'Gemini 2.5'} · ABNT
+                      </p>
+                    </div>
+                    {/* Seletor de motor IA */}
+                    <div className="ml-auto flex items-center gap-1 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                      <button onClick={() => { setAiProvider('gemini'); savePref('tcc-ai-provider', 'gemini'); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${aiProvider === 'gemini' ? 'bg-white dark:bg-slate-700 text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        Gemini
+                      </button>
+                      <button onClick={() => { setAiProvider('minimax'); savePref('tcc-ai-provider', 'minimax'); }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${aiProvider === 'minimax' ? 'bg-white dark:bg-slate-700 text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                        MiniMax
+                      </button>
                     </div>
                   </div>
                   <div className="p-6 space-y-4">
